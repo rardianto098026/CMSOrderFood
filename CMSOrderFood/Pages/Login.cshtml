@@ -1,0 +1,76 @@
+﻿@page
+@model CMSOrderFood.Pages.LoginModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Page</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="/css/login.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-form">
+            <h1 class="login-title">Login</h1>
+            <form id="loginForm">
+                <div class="input-group">
+                    <label for="username"><i class="fas fa-user"></i></label>
+                    <input type="text" id="username" placeholder="Username" />
+                </div>
+                <div class="input-group">
+                    <label for="password"><i class="fas fa-lock"></i></label>
+                    <input type="password" id="password" placeholder="Password" />
+                </div>
+                <div class="input-group">
+                    <button type="submit">Login</button>
+                </div>
+            </form>
+            <p id="errorMessage" class="error-message"></p>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            $("#loginForm").submit(function (event) {
+                event.preventDefault();
+
+                var username = $("#username").val();
+                var password = $("#password").val();
+
+                var data = {
+                    Username: username,
+                    Password: password
+                };
+                var cek = JSON.stringify(data);
+
+                $.ajax({
+                    type: "POST",
+                    url: "https://localhost:7161/api/Auth/Login",
+                    contentType: "application/json",
+                    data: JSON.stringify(data),
+                    success: function (response) {
+                        // Handle successful login (e.g., redirect to a secure page)
+                        localStorage.setItem("accessToken", response.token);
+
+                        if(response.role == "Pelayan"){
+                            window.location.href = "/pelayan/pesanan";
+                        }
+
+                    },
+                    error: function (xhr, status, error) {
+                        console.log("Request failed. Status:", xhr.status);
+                        console.log("Error message:", xhr.responseText);
+
+                        // Display a generic error message to the user
+                        $("#errorMessage").text("Invalid credentials. Please try again.").show();
+                    }
+                });
+            });
+        });
+
+    </script>
+</body>
+</html>

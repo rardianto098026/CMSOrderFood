@@ -1,0 +1,140 @@
+﻿@page
+@model CMSOrderFood.Pages.Pelayan.PesananModel
+@{
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Menu List</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="/css/pesanan.css">
+    <script src="/site.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Menu List</h1>
+
+    <h2>Place Order</h2>
+    <form id="orderForm">
+        <label for="tableNumber">Table Number:</label>
+        <input type="number" id="tableNumber" required><br>
+
+        <div id="menuItems">
+            <!-- Menu items will be dynamically added via JavaScript -->
+        </div>
+
+        <input type="submit" value="Add to Order">
+    </form>
+
+    <h2>Order Summary</h2>
+    <div id="orderSummary"></div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</body>
+</html>
+<script>
+    $(document).ready(function () {
+
+        $.ajax({
+            type: "GET",
+            url: "https://localhost:7161/api/Order/GetMenu",
+            headers: {
+                "Authorization": "Bearer " + localStorage.getItem("accessToken")
+            },
+            dataType: "json",
+            success: function (menuItems) {
+                // Get the menuItems container
+                var menuItemsContainer = $("#menuItems");
+
+                // Generate HTML for each menu item
+                menuItems.forEach(function (menuItem) {
+                    // Create a card for each menu item
+                    var card = $(`<div class="card" id="${menuItem.id}"></div>`);
+
+                    // Add the menu item name and description to the card
+                    card.append(`<h3>${menuItem.name}</h3>`);
+                    card.append(`<p>${menuItem.description}</p>`);
+
+                    // Create a quantity input for the menu item with a unique id
+                    var quantityInput = $(`<input type="number" id="quantity_${menuItem.id}" required>`);
+                    card.append('<label for="quantity">Quantity:</label>');
+                    card.append(quantityInput);
+
+                    // Add the card to the menuItems container
+                    menuItemsContainer.append(card);
+                });
+            },
+            error: function (xhr, status, error) {
+                console.log("Error fetching menu items:", error);
+            }
+        });
+
+        $("#orderForm").submit(function (event) {
+            event.preventDefault();
+            debugger;
+            // Get the table number
+            var tableNumber = $("#tableNumber").val();
+
+            // Loop through the menu items to submit orders
+            var cekk = $(".card");
+            var orderDataArray = []; // Array to store order data objects
+
+            $(".card").each(function () {
+                // Get the menu item id from the card id attribute
+                var menuItemId = $(this).attr("id");
+
+                // Get the quantity input value for the current menu item
+                var quantity = $(`#quantity_${menuItemId}`).val();
+
+                // Create the order data object and add it to the array
+                var orderData = {
+                    OrderId:"",
+                    OrderItemId:"",
+                    MenuItemId: menuItemId,
+                    Quantity: quantity
+                };
+                orderDataArray.push(orderData);
+            });
+
+            // Create the final object with the TableNumber and the array of menu items
+            var finalOrderData = {
+                TableNumber: tableNumber,
+                OrderId:"",
+                Items: orderDataArray
+            };
+
+            // Convert the finalOrderData to JSON string
+            var jsonData = JSON.stringify(finalOrderData);
+
+            // Send the order data to the server using AJAX
+            $.ajax({
+                type: "POST",
+                url: "https://localhost:7161/api/Order/AddOrder",
+                headers: {
+                    "Authorization": "Bearer " + localStorage.getItem("accessToken"),
+                    "Content-Type": "application/json"
+                },
+                data: jsonData,
+                success: function (response) {
+                    // Handle successful order submission (e.g., display a success message)
+                    console.log("Order submitted successfully:", response);
+                    // Optionally, you can clear the form or take any other action after a successful submission
+                },
+                error: function (xhr, status, error) {
+                    console.log("Error submitting order:", error);
+                    // Handle the error (e.g., display an error message to the user)
+                }
+            });
+        });
+
+
+        // Function to display the order summary
+        function displayOrderSummary(order) {
+            var orderSummary = $("#orderSummary");
+            orderSummary.append(`<p>Order ID: ${order.id}</p>`);
+            orderSummary.append(`<p>Table Number: ${order.tableNumber}</p>`);
+            orderSummary.append(`<p>Menu Item: ${order.menuItem.name}</p>`);
+            orderSummary.append(`<p>Quantity: ${order.quantity}</p>`);
+        }
+    });
+</script>
